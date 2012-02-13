@@ -5,7 +5,7 @@
     include_once(ROOT_DIR.'/curl.php');
     include_once(ROOT_DIR.'/dbm.class.php');
 
-    if(isset($_GET['string'])){
+    if(isset($_GET['string'])) {
         $db = new DBM();
         $db->DBManager('localhost', '', '', 'effect');
         $ids = explode(',', $_GET['string']);
@@ -20,7 +20,7 @@
             $data = &$tmp['str'];
         }
     }
-    if(count($data) > 0){
+    if(count($data) > 0) {
         include('show.php');
     }
 ?>

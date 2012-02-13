@@ -105,15 +105,18 @@
 
     function checkIds($ids) {
         global $db;
+        // REVIEW redundant init?
         $str = array();
         foreach($ids as $id) {
-            $sql = "SELECT COUNT(*) FROM players WHERE time > ".(now() - CACHE * 3600)." AND name = '".$id."';";
+            // REVIEW Why no SELECT and check result length?
+            $sql = "SELECT COUNT(*) FROM players WHERE time > ".(now() - CACHE * 3600)." AND id = '".$id."';";
             $db->executeQuery($sql);
             $str = $db->loadResult();
             if($str[0]['COUNT(*)'] != 0) {
-                $sql = "SELECT * FROM players WHERE name = '".$id."';";
+                $sql = "SELECT * FROM players WHERE id = '".$id."';";
                 $db->executeQuery($sql);
                 $str = $db->loadResult();
+                $new_str[$id]['name'] = $str[0]['name'];
                 $new_str[$id]['win'] = $str[0]['win'];
                 $new_str[$id]['eff'] = $str[0]['eff'];
             } else {
@@ -133,7 +136,6 @@
         $result = $curl->exec();  
         $curl->clear();
         return $result;
-
     }
 
     function getMemId($search) {
@@ -190,17 +192,22 @@
         return $data;
     }
 
+    // TODO after review fixes create same method to work directly with IDs
     function linkCreater($names) {
-        $chk_url = 'http://worldoftanks.ru/uc/accounts/1000/api/1.2/?source_token=Intellect_Soft-WoT_Mobile-unofficial_stats'; 
+        // REVIEW what this?
+        // also: there are any difference with http://worldoftanks.ru/uc/accounts/1011592/api/1.1/?source_token=Intellect_Soft-WoT_Mobile-site ?
+        $chk_url = 'http://worldoftanks.ru/uc/accounts/1000/api/1.2/?source_token=Intellect_Soft-WoT_Mobile-unofficial_stats';
+        // REVIEW why 40? It seems we need max 30 players at once.
         if(isValidUrl($chk_url) === true && count($names) < 40) {
             foreach($names as $name) {
+                // REVIEW bad variable name
                 $srch = getMemId($name);
                 if(isset($srch['request_data']['items']['0'])) {
-                    $data[$name] = urlCreate($srch['request_data']['items'],$name);
+                    $data[$name] = urlCreate($srch['request_data']['items'], $name);
                 } else {
                     $srch = getMemId($name);
                     if(isset($srch['request_data']['items']['0'])) {
-                        $data[$name] = urlCreate($srch['request_data']['items'],$name);
+                        $data[$name] = urlCreate($srch['request_data']['items'], $name);
                     } else {
                         $data[$name] = 'http://worldoftanks.ru/uc/accounts/1/api/1.2/?source_token=Intellect_Soft-WoT_Mobile-unofficial_stats';    
                     }
@@ -213,9 +220,10 @@
     function processData($stats) {
         foreach($stats as $name => $stat) {
             $per_stat = (json_decode(trim($stat), true));
+            // REVIEW strong equal === is recommended anywhere when possible
             if($per_stat['status'] == 'ok' && $per_stat['status_code'] == 'NO_ERROR') {
                 if($per_stat['data']['summary']['battles_count'] != 0) {
-                    $array[$name]['win'] = round($per_stat['data']['summary']['wins']*100/$per_stat['data']['summary']['battles_count'],1);
+                    $array[$name]['win'] = round($per_stat['data']['summary']['wins']*100 / $per_stat['data']['summary']['battles_count'],1);
                 } else {
                     $array[$name]['win'] = '0';
                 }
@@ -229,15 +237,15 @@
                 }
                 $mid = 0;
                 foreach($tank_lvl as $lvl => $tanks) {
-                    $mid +=  $lvl*$tanks['battle_count']/$tank_lvl['battle_count'];
+                    $mid +=  $lvl * $tanks['battle_count'] / $tank_lvl['battle_count'];
                 }
                 $effect = array();
                 if($per_stat['data']['summary']['battles_count'] != 0) {
-                    $effect['dmg'] = $per_stat['data']['battles']['damage_dealt']/$per_stat['data']['summary']['battles_count'];
-                    $effect['des'] = $per_stat['data']['battles']['frags']/$per_stat['data']['summary']['battles_count'];
-                    $effect['det'] = $per_stat['data']['battles']['spotted']/$per_stat['data']['summary']['battles_count'];
-                    $effect['cap'] = $per_stat['data']['battles']['capture_points']/$per_stat['data']['summary']['battles_count'];
-                    $effect['def'] = $per_stat['data']['battles']['dropped_capture_points']/$per_stat['data']['summary']['battles_count'];
+                    $effect['dmg'] = $per_stat['data']['battles']['damage_dealt'] / $per_stat['data']['summary']['battles_count'];
+                    $effect['des'] = $per_stat['data']['battles']['frags'] / $per_stat['data']['summary']['battles_count'];
+                    $effect['det'] = $per_stat['data']['battles']['spotted'] / $per_stat['data']['summary']['battles_count'];
+                    $effect['cap'] = $per_stat['data']['battles']['capture_points'] / $per_stat['data']['summary']['battles_count'];
+                    $effect['def'] = $per_stat['data']['battles']['dropped_capture_points'] / $per_stat['data']['summary']['battles_count'];
                     $array[$name]['eff'] = round(($effect['dmg']*(10/$mid)*(0.15+$mid*2/100) + $effect['des']*(0.35-$mid*2/100)*1000 + $effect['det']*0.2*1000 + $effect['cap']*0.15*1000 + $effect['def']*0.15*1000)/10,0)*10;
                 } else {
                     $array[$name]['eff'] = 0;
