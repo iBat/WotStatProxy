@@ -9,13 +9,13 @@
         $db = new DBM();
         $db->DBManager('localhost', '', '', 'effect');
         $names = explode(',', $_GET['string']);
-        $tmp = checker($names);
-        $urls = link_creater($tmp['names']);
-        $result = multiget($urls) ;
-        $data = process_data($result);
+        $tmp = checkNames($names);
+        $urls = linkCreater($tmp['names']);
+        $result = batchGet($urls) ;
+        $data = processData($result);
         if(count($data) > 0) {
-            $data = array_special_merge($tmp['str'], $data);
-            insert_data($data);    
+            $data = arraySpecialMerge($tmp['str'], $data);
+            insertData($data);
         } else {
             $data = &$tmp['str'];
         }
