@@ -10,7 +10,7 @@
         $db->DBManager('localhost', '', '', 'effect');
         $ids = explode(',', $_GET['string']);
         $tmp = checkIds($ids);
-        $urls = linkCreater($tmp['names']);
+        $urls = linkCreater($tmp['ids']);
         $result = batchGet($urls) ;
         $data = processData($result);
         if(count($data) > 0) {

@@ -123,7 +123,7 @@
                 $new_name[] = $id;
             }
         }
-        $new['names'] = &$new_name;
+        $new['ids'] = &$new_name;
         $new['str'] = &$new_str;
         return $new;
     }
@@ -132,7 +132,7 @@
         $curl = new CURL();
         $opts = array(CURLOPT_RETURNTRANSFER => true);
         foreach($urls as $key => $link)
-            $curl->addSession( $link, $key, $opts );
+            $curl->addSession($link, $key, $opts);
         $result = $curl->exec();  
         $curl->clear();
         return $result;
@@ -192,10 +192,9 @@
         return $data;
     }
 
-    // TODO after review fixes create same method to work directly with IDs
     function linkCreater($names) {
         // REVIEW what this?
-        // also: there are any difference with http://worldoftanks.ru/uc/accounts/1011592/api/1.1/?source_token=Intellect_Soft-WoT_Mobile-site ?
+        // also: there are any differences with http://worldoftanks.ru/uc/accounts/1011592/api/1.1/?source_token=Intellect_Soft-WoT_Mobile-site ?
         $chk_url = 'http://worldoftanks.ru/uc/accounts/1000/api/1.2/?source_token=Intellect_Soft-WoT_Mobile-unofficial_stats';
         // REVIEW why 40? It seems we need max 30 players at once.
         if(isValidUrl($chk_url) === true && count($names) < 40) {
@@ -217,21 +216,31 @@
         return $data;
     }
 
+    function makeLinksFromIds($ids) {
+        foreach($ids as $id) {
+            $links[$id] = "http://worldoftanks.ru/uc/accounts/$id/api/1.2/?source_token=Intellect_Soft-WoT_Mobile-unofficial_stats";
+        }
+        return $links;
+    }
+
     function processData($stats) {
-        foreach($stats as $name => $stat) {
+        foreach($stats as $id => $stat) {
             $per_stat = (json_decode(trim($stat), true));
             // REVIEW strong equal === is recommended anywhere when possible
             if($per_stat['status'] == 'ok' && $per_stat['status_code'] == 'NO_ERROR') {
-                if($per_stat['data']['summary']['battles_count'] != 0) {
-                    $array[$name]['win'] = round($per_stat['data']['summary']['wins']*100 / $per_stat['data']['summary']['battles_count'],1);
+                $data = $per_stat['data'];
+                $summary = $data['summary'];
+                $battlesCount = $summary['battles_count'];
+                if($battlesCount != 0) {
+                    $array[$id]['win'] = round($summary['wins'] * 100 / $battlesCount, 1);
                 } else {
-                    $array[$name]['win'] = '0';
+                    $array[$id]['win'] = '0';
                 }
                 $tank_lvl['battle_count'] = 0;
                 for($nl = 1; $nl <= 10; $nl++) {
                     $tank_lvl[$nl]['battle_count'] = 0;
                 }
-                foreach($per_stat['data']['vehicles'] as $tanks) {
+                foreach($data['vehicles'] as $tanks) {
                     $tank_lvl[$tanks['level']]['battle_count'] += $tanks['battle_count'];
                     $tank_lvl['battle_count'] += $tanks['battle_count'];
                 }
@@ -240,20 +249,21 @@
                     $mid +=  $lvl * $tanks['battle_count'] / $tank_lvl['battle_count'];
                 }
                 $effect = array();
-                if($per_stat['data']['summary']['battles_count'] != 0) {
-                    $effect['dmg'] = $per_stat['data']['battles']['damage_dealt'] / $per_stat['data']['summary']['battles_count'];
-                    $effect['des'] = $per_stat['data']['battles']['frags'] / $per_stat['data']['summary']['battles_count'];
-                    $effect['det'] = $per_stat['data']['battles']['spotted'] / $per_stat['data']['summary']['battles_count'];
-                    $effect['cap'] = $per_stat['data']['battles']['capture_points'] / $per_stat['data']['summary']['battles_count'];
-                    $effect['def'] = $per_stat['data']['battles']['dropped_capture_points'] / $per_stat['data']['summary']['battles_count'];
-                    $array[$name]['eff'] = round(($effect['dmg']*(10/$mid)*(0.15+$mid*2/100) + $effect['des']*(0.35-$mid*2/100)*1000 + $effect['det']*0.2*1000 + $effect['cap']*0.15*1000 + $effect['def']*0.15*1000)/10,0)*10;
+                if($battlesCount != 0) {
+                    $battles = $data['battles'];
+                    $effect['dmg'] = $battles['damage_dealt'] / $battlesCount;
+                    $effect['des'] = $battles['frags'] / $battlesCount;
+                    $effect['det'] = $battles['spotted'] / $battlesCount;
+                    $effect['cap'] = $battles['capture_points'] / $battlesCount;
+                    $effect['def'] = $battles['dropped_capture_points'] / $battlesCount;
+                    $array[$id]['eff'] = round(($effect['dmg'] * (10 / $mid)*(0.15 + $mid/50) + $effect['des'] * (0.35 - $mid / 50)
+                                                * 1000 + $effect['det'] * 200 + $effect['cap'] * 150 + $effect['def'] * 150) / 10,0) * 10;
                 } else {
-                    $array[$name]['eff'] = 0;
+                    $array[$id]['eff'] = 0;
                 }
-
             } else {
-                $array[$name]['eff'] = 'X';
-                $array[$name]['win'] = 'X';
+                $array[$id]['eff'] = 'X';
+                $array[$id]['win'] = 'X';
             }
         }
         return $array;   
