@@ -66,18 +66,17 @@
 
     function insertData($data) {
         global $db;
-        foreach($data as $name => $ins) {
-            $sql = "SELECT COUNT(*) FROM players WHERE name = '".$name."';";
-            $db->executeQuery($sql); 
-            $str = $db->loadResult();
-            if($str[0]['COUNT(*)'] == 0) {
-                $sql = "INSERT INTO players (name,time,eff,win) VALUES ('".$name."','".now()."','".$ins['eff']."','".$ins['win']."');";
-                //echo $sql;
-                $db->executeQuery($sql);
-            } else {
-                $sql = "UPDATE players SET time = '".now()."', eff = '".$ins['eff']."', win = '".$ins['win']."'  WHERE name = '".$name."';";
-                $db->executeQuery($sql);
-            } 
+        $now = now();
+        foreach($data as $id => $ins) {
+            $name = $ins['name'];
+            $eff = $ins['eff'];
+            $win = $ins['win'];
+            $sql = "INSERT INTO players (id, name, time, eff, win)
+                    VALUES ('$id','$name','$now','$eff','$win')
+                    ON DUPLICATE KEY
+                    UPDATE time='$now', eff='$eff', win='$win';";
+            echo $sql;
+            $db->executeQuery($sql);
         }
     }
 
@@ -252,6 +251,8 @@
                 $data = $per_stat['data'];
                 $summary = $data['summary'];
                 $battlesCount = $summary['battles_count'];
+                
+                $array[$id]['name'] = $data['name'];
                 if($battlesCount != 0) {
                     $array[$id]['win'] = round($summary['wins'] * 100 / $battlesCount, 0);
                 } else {
