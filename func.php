@@ -83,7 +83,6 @@
 
     function checkNames($names) {
         global $db;
-		$now = now();
 		$sql = "SELECT * FROM players WHERE name IN ('".implode("','", $names)."')";
 		$db->executeQuery($sql);
 		$res = $db->loadResult();
@@ -94,8 +93,9 @@
 			$eff = $res[$index]['eff'];
 			$cached[$name]['win'] = $win;
 			$cached[$name]['eff'] = $eff;
-			array_splice($names, $name, 1);
+			unset($names[$name]);
 		}
+		$names = array_values($names);
 		$result['names'] = &$names;
         $result['str'] = &$cached;
         return $result;
