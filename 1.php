@@ -10,8 +10,8 @@
         $db->DBManager('localhost', '', '', 'effect');
         $ids = explode(',', $_GET['string']);
         $tmp = checkIds($ids);
-        $urls = linkCreater($tmp['ids']);
-        $result = batchGet($urls) ;
+        $urls = makeLinksFromIds($tmp['ids']);
+        $result = batchGet($urls);
         $data = processData($result);
         if(count($data) > 0) {
             $data = arraySpecialMerge($tmp['str'], $data);
