@@ -72,7 +72,7 @@
             $str = $db->loadResult();
             if($str[0]['COUNT(*)'] == 0) {
                 $sql = "INSERT INTO players (name,time,eff,win) VALUES ('".$name."','".now()."','".$ins['eff']."','".$ins['win']."');";
-                echo $sql;
+                //echo $sql;
                 $db->executeQuery($sql);
             } else {
                 $sql = "UPDATE players SET time = '".now()."', eff = '".$ins['eff']."', win = '".$ins['win']."'  WHERE name = '".$name."';";
@@ -83,6 +83,27 @@
 
     function checkNames($names) {
         global $db;
+		$now = now();
+		$sql = "SELECT * FROM players WHERE name IN ('".implode("','", $names)."')";
+		$db->executeQuery($sql);
+		$res = $db->loadResult();
+		// TODO check cache time
+		for($index = 0; $index < count($res); $index++) {
+			$name = $res[$index]['name'];
+			$win = $res[$index]['win'];
+			$eff = $res[$index]['eff'];
+			$cached[$name]['win'] = $win;
+			$cached[$name]['eff'] = $eff;
+			array_splice($names, $name, 1);
+		}
+		$result['names'] = &$names;
+        $result['str'] = &$cached;
+        return $result;
+		
+		/*
+		Trash below
+		
+		
         $str = array();
         foreach($names as $name) {
             $sql = "SELECT COUNT(*) FROM players WHERE time > ".(now() - CACHE * 3600)." AND name = '".$name."';";
@@ -100,7 +121,7 @@
         }
         $new['names'] = &$new_name;
         $new['str'] = &$new_str;
-        return $new;
+        return $new;*/
     }
 
     function checkIds($ids) {
@@ -256,8 +277,8 @@
                     $effect['det'] = $battles['spotted'] / $battlesCount;
                     $effect['cap'] = $battles['capture_points'] / $battlesCount;
                     $effect['def'] = $battles['dropped_capture_points'] / $battlesCount;
-                    $array[$id]['eff'] = round(($effect['dmg'] * (10 / $mid)*(0.15 + $mid/50) + $effect['des'] * (0.35 - $mid / 50)
-                                                * 1000 + $effect['det'] * 200 + $effect['cap'] * 150 + $effect['def'] * 150) / 10,0) * 10;
+                    $array[$id]['eff'] = round(($effect['dmg'] * (10 / $mid) * (0.15 + $mid / 50) + $effect['des'] * (0.35 - $mid / 50)
+                                                * 1000 + $effect['det'] * 200 + $effect['cap'] * 150 + $effect['def'] * 150) / 10, 0) * 10;
                 } else {
                     $array[$id]['eff'] = 0;
                 }

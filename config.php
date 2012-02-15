@@ -1,3 +1,3 @@
 <?php
-  define('CACHE', 1);
+  define('CACHE', 24 * 7);
 ?>
