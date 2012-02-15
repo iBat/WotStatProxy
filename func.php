@@ -253,7 +253,7 @@
                 $summary = $data['summary'];
                 $battlesCount = $summary['battles_count'];
                 if($battlesCount != 0) {
-                    $array[$id]['win'] = round($summary['wins'] * 100 / $battlesCount, 1);
+                    $array[$id]['win'] = round($summary['wins'] * 100 / $battlesCount, 0);
                 } else {
                     $array[$id]['win'] = '0';
                 }
